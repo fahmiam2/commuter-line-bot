@@ -4,12 +4,14 @@ This project is a Telegram bot that provides users with schedule and fare inform
 
 ## Table of Contents
 
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
+- [KRL Telegram Bot](#krl-telegram-bot)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Features
 
@@ -27,43 +29,37 @@ This project is a Telegram bot that provides users with schedule and fare inform
 
 1. Clone the repository to your local machine:
 
-<pre>
 ```bash
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
-</pre>
 
 2. Change to the project directory:
-<pre>
+   
 ```bash
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
-</pre>
 
 3. Create and activate a virtual environment (optional but recommended):
-<pre>
+
 ```bash
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
-</pre>
 
 4. Install the required packages:
-<pre>
+   
 ```shell
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
-</pre>
 
 5. Replace "YOUR_BOT_TOKEN" in the `krl_bot.py` script with your actual Telegram bot token.
 
 ## Usage
 
 1. Run the Telegram bot:
-<pre>
+
 ```shell
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
-</pre>
 
 2. Interact with the bot on Telegram by sending messages containing station names and time ranges to get schedule and fare information.
 
