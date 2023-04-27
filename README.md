@@ -49,7 +49,7 @@ git clone https://github.com/yourusername/krl-telegram-bot.git
 
 4. Install the required packages:
 <pre>
-```bash
+```shell
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
 </pre>
@@ -60,7 +60,7 @@ git clone https://github.com/yourusername/krl-telegram-bot.git
 
 1. Run the Telegram bot:
 <pre>
-```bash
+```shell
 git clone https://github.com/yourusername/krl-telegram-bot.git
 ```
 </pre>
