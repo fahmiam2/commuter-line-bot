@@ -1,10 +1,21 @@
 import logging
+import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, Filters
 from main import Krl, Fare
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
+
+def get_config() -> dict:
+    try:
+        with open("config.json", 'r') as f:
+            cfg: dict = json.load(f)
+        return cfg
+    except FileNotFoundError:
+        logger.error("Config file not found.")
+    except json.JSONDecodeError as e:
+        logger.error(f"Error while decoding config file: {e}")
 
 def start(update: Update, _: CallbackContext) -> None:
     keyboard = [
@@ -56,7 +67,10 @@ def fare_info_dest(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('No fare information found.')
 
 def main() -> None:
-    updater = Updater("YOUR_BOT_TOKEN")
+    config:dict = get_config()
+    # updater = Updater(config["TELEGRAM_API_TOKEN"])
+    updater = Updater(token=config["TELEGRAM_API_TOKEN"], use_context=True)
+
 
     dispatcher = updater.dispatcher
 
