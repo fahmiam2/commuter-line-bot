@@ -1,11 +1,13 @@
 import logging
 import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, Filters, ConversationHandler
 from main import Krl, Fare
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
+
+SCHEDULE_INFO, SCHEDULE_INFO_START_TIME, SCHEDULE_INFO_END_TIME, FARE_INFO, FARE_INFO_DEST, MENU = range(6)
 
 def get_config() -> dict:
     try:
@@ -20,14 +22,22 @@ def get_config() -> dict:
 def start(update: Update, _: CallbackContext) -> None:
     keyboard = [
         [
-            InlineKeyboardButton("Schedule Info", callback_data='schedule_info'),
-            InlineKeyboardButton("Fare Info", callback_data='fare_info')
+            InlineKeyboardButton("Check Schedule", callback_data='schedule_info'),
+            InlineKeyboardButton("Check Fare", callback_data='fare_info')
         ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    update.message.reply_text('Hi there! What would you like to do?', reply_markup=reply_markup)
+
+def back_to_menu_keyboard() -> InlineKeyboardMarkup:
+    keyboard = [
+        [
+            InlineKeyboardButton("Back to main menu", callback_data='back_to_menu')
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
 
 def button(update: Update, _: CallbackContext) -> None:
     query = update.callback_query
@@ -35,49 +45,87 @@ def button(update: Update, _: CallbackContext) -> None:
 
     if query.data == 'schedule_info':
         query.edit_message_text(text="Please enter the station name:")
-        return 'schedule_info'
+        return SCHEDULE_INFO
     elif query.data == 'fare_info':
         query.edit_message_text(text="Please enter the origin station name:")
-        return 'fare_info'
+        return FARE_INFO
+    elif query.data == 'back_to_menu':
+        query.edit_message_text(text='Hi there! What would you like to do?', reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Check Schedule", callback_data='schedule_info'),
+             InlineKeyboardButton("Check Fare", callback_data='fare_info')]]))
+        return ConversationHandler.END
 
-def schedule_info(update: Update, _: CallbackContext) -> None:
+
+def schedule_info(update: Update, context: CallbackContext) -> int:
     station_name = update.message.text
-    krl = Krl(station_name=station_name)
-    schedule = krl.get_schedule()
+    context.user_data['station_name'] = station_name
+    update.message.reply_text('Please enter the start time:')
+    return SCHEDULE_INFO_START_TIME
 
-    if schedule:
-        update.message.reply_text(str(schedule))
+def schedule_info_start_time(update: Update, context: CallbackContext) -> int:
+    start_time = update.message.text
+    context.user_data['start_time'] = start_time
+    update.message.reply_text('Please enter the end time:')
+    return SCHEDULE_INFO_END_TIME
+
+def schedule_info_end_time(update: Update, context: CallbackContext) -> None:
+    end_time = update.message.text
+    station_name = context.user_data['station_name']
+    start_time = context.user_data['start_time']
+    krl = Krl(station_name=station_name, start_time=start_time, end_time=end_time)
+    schedule_data = krl.get_schedule()
+
+    if schedule_data:
+        formatted_schedule = krl.format_schedule(schedule_data)
+        update.message.reply_text('Here is the schedule:')
+        update.message.reply_text(str(formatted_schedule))
+        update.message.reply_text('Is there anything else you need?', reply_markup=back_to_menu_keyboard())
     else:
         update.message.reply_text('No schedule found.')
+        update.message.reply_text('Is there anything else you need?', reply_markup=back_to_menu_keyboard())
+    
 
-def fare_info(update: Update, _: CallbackContext) -> None:
+def fare_info(update: Update, context: CallbackContext) -> int:
     origin_station = update.message.text
+    context.user_data['origin_station'] = origin_station
     update.message.reply_text('Please enter the destination station name:')
-    return origin_station
+    return FARE_INFO_DEST
 
 def fare_info_dest(update: Update, context: CallbackContext) -> None:
     dest_station = update.message.text
     origin_station = context.user_data['origin_station']
     fare = Fare(station_name=origin_station, dest_station_name=dest_station)
-    fare_result = fare.get_fare()
+    fare_data = fare.get_fare()
 
-    if fare_result:
-        update.message.reply_text(str(fare_result))
+    if fare_data:
+        formatted_fare = fare.format_fare(fare_data)
+        update.message.reply_text('The fare for this route is:')
+        update.message.reply_text(str(formatted_fare))
+        update.message.reply_text('Do you need more information?', reply_markup=back_to_menu_keyboard())
     else:
         update.message.reply_text('No fare information found.')
+        update.message.reply_text('Do you need more information?', reply_markup=back_to_menu_keyboard())
 
 def main() -> None:
     config:dict = get_config()
-    # updater = Updater(config["TELEGRAM_API_TOKEN"])
     updater = Updater(token=config["TELEGRAM_API_TOKEN"], use_context=True)
-
 
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CallbackQueryHandler(button))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, schedule_info))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, fare_info))
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start), CallbackQueryHandler(button)],
+        states={
+            SCHEDULE_INFO: [MessageHandler(Filters.text & ~Filters.command, schedule_info)],
+            SCHEDULE_INFO_START_TIME: [MessageHandler(Filters.text & ~Filters.command, schedule_info_start_time)],
+            SCHEDULE_INFO_END_TIME: [MessageHandler(Filters.text & ~Filters.command, schedule_info_end_time)],
+            FARE_INFO: [MessageHandler(Filters.text & ~Filters.command, fare_info)],
+            FARE_INFO_DEST: [MessageHandler(Filters.text & ~Filters.command, fare_info_dest)]
+        },
+        fallbacks=[],
+        allow_reentry=True
+    )
+
+    dispatcher.add_handler(conv_handler)
 
     updater.start_polling()
 
