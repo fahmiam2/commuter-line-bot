@@ -54,8 +54,8 @@ class Krl():
 
     def find_station_id_by_name(self) -> str:
         self.get_station_id()
-        if self.station_ids and self.station_name.upper() in self.station_ids:
-            self.station_id: str = self.station_ids[self.station_name.upper()]
+        if self.station_ids and self.station_name.replace(" ", "").upper() in self.station_ids:
+            self.station_id: str = self.station_ids[self.station_name.replace(" ", "").upper()]
             return self.station_id
         else:
             logger.error(f"Station '{self.station_name.upper()}' not found.")
@@ -91,8 +91,8 @@ class Fare(Krl):
 
     def find_dest_station_id_by_name(self) -> str:
         self.get_station_id()
-        if self.station_ids and self.dest_station_name.upper() in self.station_ids:
-            self.dest_station_id: str = self.station_ids[self.dest_station_name.upper()]
+        if self.station_ids and self.dest_station_name.replace(" ", "").upper() in self.station_ids:
+            self.dest_station_id: str = self.station_ids[self.dest_station_name.replace(" ", "").upper()]
             return self.dest_station_id
         else:
             logger.error(f"Station '{self.dest_station_name.upper()}' not found.")
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     formatted_schedule = krl.format_schedule(schedule_data)
     print(formatted_schedule)
 
-    fare = Fare(station_name="Tangerang", dest_station_name="Tanahtinggi")
+    fare = Fare(station_name="Tangerang", dest_station_name="Tanah tinggi")
     fare_data = fare.get_fare()
     formatted_fare = fare.format_fare(fare_data)
     print(formatted_fare)
