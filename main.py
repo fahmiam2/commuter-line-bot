@@ -10,10 +10,19 @@ workflow idea to build this project:
 import requests
 import json
 import logging
+import sys
 from datetime import datetime, timedelta
 import pytz
 
 logger = logging.getLogger(__name__)
+# logging.basicConfig(
+#     filename="app.log",
+#     level=logging.INFO,
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+#     datefmt="%Y-%m-%d %H:%M:%S",
+# )
+# logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
 
 class Krl():
     def __init__(self, station_name: str = None, start_time: str = None, end_time: str = None) -> None:
@@ -63,7 +72,8 @@ class Krl():
         
     def get_schedule(self) -> dict:
         self.find_station_id_by_name()
-        schedule_api_url: str = f"https://api-partner.krl.co.id/krlweb/v1/schedule?stationid={self.station_id}&timefrom={self.start_time}&timeto={self.end_time}"
+        schedule_base_api = self.get_config()["SCHEDULE_BASE_API"]
+        schedule_api_url: str = f"{schedule_base_api}stationid={self.station_id}&timefrom={self.start_time}&timeto={self.end_time}"
         response: requests.Response = requests.get(schedule_api_url)
         if response.status_code == 200:
             data_api_krl: dict = response.json()["data"]
@@ -73,7 +83,7 @@ class Krl():
             return None
         
     def format_schedule(self, schedule_data: dict) -> str:
-        output = "Train Schedule:\n\n"
+        output = f"Train Schedule between {self.start_time}-{self.end_time} WIB:\n\n"
         for train in schedule_data:
             output += f"Train ID: {train['train_id']} - {train['ka_name']}\n"
             output += f"Route: {train['route_name']}\n"
@@ -101,7 +111,8 @@ class Fare(Krl):
     def get_fare(self) -> dict:
         self.find_station_id_by_name()
         self.find_dest_station_id_by_name()
-        fare_api_url: str = f"https://api-partner.krl.co.id/krlweb/v1/fare?stationfrom={self.station_id}&stationto={self.dest_station_id}"
+        fare_base_api = self.get_config()["FARE_BASE_API"]
+        fare_api_url: str = f"{fare_base_api}stationfrom={self.station_id}&stationto={self.dest_station_id}"
         response: requests.Response = requests.get(fare_api_url)
         if response.status_code == 200:
             logger.info("data fare berhasil")
