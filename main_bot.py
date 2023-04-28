@@ -59,14 +59,29 @@ def button(update: Update, _: CallbackContext) -> None:
 def schedule_info(update: Update, context: CallbackContext) -> int:
     station_name = update.message.text
     context.user_data['station_name'] = station_name
-    update.message.reply_text('Please enter the start time (HH:00):')
+    update.message.reply_text('Please enter the start time (HH:00) or just type `NOW`:')
     return SCHEDULE_INFO_START_TIME
 
 def schedule_info_start_time(update: Update, context: CallbackContext) -> int:
     start_time = update.message.text
-    context.user_data['start_time'] = start_time
-    update.message.reply_text('Please enter the end time (HH:00):')
-    return SCHEDULE_INFO_END_TIME
+    station_name = context.user_data['station_name']
+    if start_time.lower() == "now":
+        start_time = None
+        end_time = None
+        krl = Krl(station_name=station_name, start_time=start_time, end_time=end_time)
+        schedule_data = krl.get_schedule()
+        if schedule_data:
+            formatted_schedule = krl.format_schedule(schedule_data)
+            update.message.reply_text('Here is the schedule:')
+            update.message.reply_text(str(formatted_schedule))
+            update.message.reply_text('Is there anything else you need?', reply_markup=back_to_menu_keyboard())
+        else:
+            update.message.reply_text('No schedule found.')
+            update.message.reply_text('Is there anything else you need?', reply_markup=back_to_menu_keyboard())
+    else:
+        context.user_data['start_time'] = start_time
+        update.message.reply_text('Please enter the end time (HH:00):')
+        return SCHEDULE_INFO_END_TIME
 
 def schedule_info_end_time(update: Update, context: CallbackContext) -> None:
     end_time = update.message.text
@@ -113,7 +128,10 @@ def main() -> None:
     dispatcher = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start), CallbackQueryHandler(button)],
+        entry_points=[
+            CommandHandler("start", start), 
+            CallbackQueryHandler(button, per_message=True)
+        ],
         states={
             SCHEDULE_INFO: [MessageHandler(Filters.text & ~Filters.command, schedule_info)],
             SCHEDULE_INFO_START_TIME: [MessageHandler(Filters.text & ~Filters.command, schedule_info_start_time)],
