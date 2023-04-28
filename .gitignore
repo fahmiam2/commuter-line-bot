@@ -1,3 +1,20 @@
+# Credentials
 config.json
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyz
 draft_main.py
-.env
+
+# Egg files
+*.egg-info/
+*.egg
+
+# Virtual environments
+env/
+venv/
+
+# Log files
+*.log
