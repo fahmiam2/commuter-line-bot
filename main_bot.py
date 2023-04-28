@@ -59,13 +59,13 @@ def button(update: Update, _: CallbackContext) -> None:
 def schedule_info(update: Update, context: CallbackContext) -> int:
     station_name = update.message.text
     context.user_data['station_name'] = station_name
-    update.message.reply_text('Please enter the start time:')
+    update.message.reply_text('Please enter the start time (HH:00):')
     return SCHEDULE_INFO_START_TIME
 
 def schedule_info_start_time(update: Update, context: CallbackContext) -> int:
     start_time = update.message.text
     context.user_data['start_time'] = start_time
-    update.message.reply_text('Please enter the end time:')
+    update.message.reply_text('Please enter the end time (HH:00):')
     return SCHEDULE_INFO_END_TIME
 
 def schedule_info_end_time(update: Update, context: CallbackContext) -> None:
