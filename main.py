@@ -71,6 +71,17 @@ class Krl():
         else:
             logger.error(f"Error while retrieving schedule: {response.status_code}")
             return None
+        
+    def format_schedule(self, schedule_data: dict) -> str:
+        output = "Train Schedule:\n\n"
+        for train in schedule_data:
+            output += f"Train ID: {train['train_id']} - {train['ka_name']}\n"
+            output += f"Route: {train['route_name']}\n"
+            output += f"Destination: {train['dest']}\n"
+            output += f"Departure: {train['time_est']} - Arrival: {train['dest_time']}\n"
+            output += f"Color: {train['color']}\n"
+            output += "---------------------------------\n"
+        return output
 
 class Fare(Krl):
     def __init__(self, station_name: str = None, dest_station_name: str = None, start_time: str = None, end_time: str = None) -> None:
@@ -100,10 +111,23 @@ class Fare(Krl):
             logger.error(f"Error while retrieving fare information: {response.status_code}")
             return None
         
+    def format_fare(self, fare_data: dict) -> str:
+        output = "Fare Information:\n\n"
+        for fare in fare_data:
+            output += f"From: {fare['sta_name_from']} ({fare['sta_code_from']})\n"
+            output += f"To: {fare['sta_name_to']} ({fare['sta_code_to']})\n"
+            output += f"Fare: IDR {fare['fare']}\n"
+            output += f"Distance: {fare['distance']} km\n"
+        return output
+        
 if __name__ == '__main__':
     krl = Krl(station_name="Tangerang")
-    print(krl.get_schedule())
+    schedule_data = krl.get_schedule()
+    formatted_schedule = krl.format_schedule(schedule_data)
+    print(formatted_schedule)
 
     fare = Fare(station_name="Tangerang", dest_station_name="Tanahtinggi")
-    print(fare.get_fare())
+    fare_data = fare.get_fare()
+    formatted_fare = fare.format_fare(fare_data)
+    print(formatted_fare)
 
