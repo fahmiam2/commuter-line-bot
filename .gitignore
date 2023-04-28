@@ -20,4 +20,6 @@ venv/
 *.log
 
 # image files
-.png
+*.png
+*.jpg
+*.svg
