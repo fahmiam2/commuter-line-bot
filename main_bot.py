@@ -3,11 +3,12 @@ import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, Filters, ConversationHandler
 from main import Krl, Fare
+from main_route import Route
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 
-SCHEDULE_INFO, SCHEDULE_INFO_START_TIME, SCHEDULE_INFO_END_TIME, FARE_INFO, FARE_INFO_DEST, MENU = range(6)
+SCHEDULE_INFO, SCHEDULE_INFO_START_TIME, SCHEDULE_INFO_END_TIME, FARE_INFO, FARE_INFO_DEST, MENU, ROUTE_INFO, ROUTE_MAP_DOWNLOADED = range(8)
 
 def get_config() -> dict:
     try:
@@ -23,7 +24,8 @@ def start(update: Update, _: CallbackContext) -> None:
     keyboard = [
         [
             InlineKeyboardButton("Check Schedule", callback_data='schedule_info'),
-            InlineKeyboardButton("Check Fare", callback_data='fare_info')
+            InlineKeyboardButton("Check Fare", callback_data='fare_info'),
+            InlineKeyboardButton("Route Map", callback_data='route_info')
         ]
     ]
 
@@ -49,12 +51,19 @@ def button(update: Update, _: CallbackContext) -> None:
     elif query.data == 'fare_info':
         query.edit_message_text(text="Please enter the origin station name:")
         return FARE_INFO
+    elif query.data == 'route_info':
+        query.edit_message_text(text="Please type the area of the route map you want to download (Jabodetabek, Bandung Raya, Yogyakarta, or Surabaya):")
+        return ROUTE_INFO
     elif query.data == 'back_to_menu':
         query.edit_message_text(text='Hi there! What would you like to do?', reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Check Schedule", callback_data='schedule_info'),
-             InlineKeyboardButton("Check Fare", callback_data='fare_info')]]))
+            [
+                InlineKeyboardButton("Check Schedule", callback_data='schedule_info'),
+                InlineKeyboardButton("Check Fare", callback_data='fare_info'),
+                InlineKeyboardButton("Route Map", callback_data='route_info')
+                ]
+            ])
+        )
         return ConversationHandler.END
-
 
 def schedule_info(update: Update, context: CallbackContext) -> int:
     station_name = update.message.text
@@ -121,6 +130,26 @@ def fare_info_dest(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('No fare information found.')
         update.message.reply_text('Do you need more information?', reply_markup=back_to_menu_keyboard())
 
+def route_info(update: Update, context: CallbackContext) -> int:
+    area = update.message.text
+    context.user_data['area'] = area.upper()
+    route = Route(area.upper())
+    image_url = route.find_route_map()
+    if image_url:
+        update.message.reply_text(f'Please wait, we will provide the commuter line {area} route map to you')
+        local_image_path = route.download_route_map(image_url)
+        print(f"Downloaded {area} route map to {local_image_path}")
+        with open(local_image_path, 'rb') as photo_file:
+            update.message.reply_photo(photo=photo_file)
+        update.message.reply_text('Do you anything else?', reply_markup=back_to_menu_keyboard())
+        # os.remove(local_image_path)
+    else:
+        update.message.reply_text('No route map found.')
+        update.message.reply_text('Do you anything else?', reply_markup=back_to_menu_keyboard())
+    # return ROUTE_MAP_DOWNLOADED
+
+# def route_map_downloaded
+
 def main() -> None:
     config:dict = get_config()
     updater = Updater(token=config["TELEGRAM_API_TOKEN"], use_context=True)
@@ -130,14 +159,15 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[
             CommandHandler("start", start), 
-            CallbackQueryHandler(button, per_message=True)
+            CallbackQueryHandler(button)
         ],
         states={
             SCHEDULE_INFO: [MessageHandler(Filters.text & ~Filters.command, schedule_info)],
             SCHEDULE_INFO_START_TIME: [MessageHandler(Filters.text & ~Filters.command, schedule_info_start_time)],
             SCHEDULE_INFO_END_TIME: [MessageHandler(Filters.text & ~Filters.command, schedule_info_end_time)],
             FARE_INFO: [MessageHandler(Filters.text & ~Filters.command, fare_info)],
-            FARE_INFO_DEST: [MessageHandler(Filters.text & ~Filters.command, fare_info_dest)]
+            FARE_INFO_DEST: [MessageHandler(Filters.text & ~Filters.command, fare_info_dest)],
+            ROUTE_INFO: [MessageHandler(Filters.text & ~Filters.command, route_info)]
         },
         fallbacks=[],
         allow_reentry=True
