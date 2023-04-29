@@ -15,6 +15,7 @@ draft_main.py
 # Virtual environments
 env/
 venv/
+*.python-version
 
 # Log files
 *.log
