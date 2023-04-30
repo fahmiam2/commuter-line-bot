@@ -130,7 +130,7 @@ def fare_info_dest(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('No fare information found.')
         update.message.reply_text('Do you need more information?', reply_markup=back_to_menu_keyboard())
 
-def route_info(update: Update, context: CallbackContext) -> int:
+def route_info(update: Update, context: CallbackContext) -> None:
     area = update.message.text
     context.user_data['area'] = area.upper()
     route = Route(area.upper())
@@ -169,7 +169,7 @@ def main() -> None:
             FARE_INFO_DEST: [MessageHandler(Filters.text & ~Filters.command, fare_info_dest)],
             ROUTE_INFO: [MessageHandler(Filters.text & ~Filters.command, route_info)]
         },
-        fallbacks=[],
+        fallbacks=[MessageHandler(Filters.text | Filters.command, start)],
         allow_reentry=True
     )
 
